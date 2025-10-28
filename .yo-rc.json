@@ -1,0 +1,18 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.20.0",
+    "sdksVersions": {},
+    "version": "1.21.1",
+    "libraryName": "britoli-compras-spfx",
+    "libraryId": "0f993b29-bbaf-445e-a513-69ffb9296c79",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "britoli-compras-spfx",
+    "solutionShortDescription": "britoli-compras-spfx description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}

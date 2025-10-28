@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "britoli-compras-spfx-client-side-solution",
+    "id": "0f993b29-bbaf-445e-a513-69ffb9296c79",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": "Undefined-1.21.1"
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "britoli-compras-spfx description"
+      },
+      "longDescription": {
+        "default": "britoli-compras-spfx description"
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "britoli-compras-spfx Feature",
+        "description": "The feature that activates elements of the britoli-compras-spfx solution.",
+        "id": "5cb8237c-4bbf-4f51-8e17-0ac181b1ed31",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/britoli-compras-spfx.sppkg"
+  }
+}
