@@ -1,42 +1,50 @@
 import * as React from 'react';
 import { Stack, PrimaryButton, DefaultButton, IStackTokens, IButtonStyles } from '@fluentui/react';
 
-// Tipos de status
+
 type Status = 'RECEBIDO' | 'EM PROCURAMENT' | 'A VALIDAR' | 'ADJUDICADO';
 
 const statuses: Status[] = ['RECEBIDO', 'EM PROCURAMENT', 'A VALIDAR', 'ADJUDICADO'];
 
-// Tokens para espaçamento
+
 const tokens: IStackTokens = { childrenGap: 10 };
 
-// Estilo básico do botão desativado (Default)
+
 const defaultButtonStyles: IButtonStyles = {
   root: {
-    backgroundColor: '#F3F2F1', // Cinza claro
-    borderColor: '#F3F2F1',
+    backgroundColor: '#ecdd84ff',
+    borderColor: '#ecdd84ff',
     color: '#323130',
     fontWeight: 'normal',
+    borderRadius: 15
   },
   rootHovered: {
-    backgroundColor: '#EAEAEA',
+    backgroundColor: '#FFC72C',
   },
 };
 
 // Estilo do botão ativo (Primary)
 const primaryButtonStyles: IButtonStyles = {
-    root: {
-        backgroundColor: '#FFC72C', // Amarelo
-        borderColor: '#FFC72C',
-        color: '#323130', // Texto escuro
-        fontWeight: 'bold',
-    },
-    rootHovered: {
-        backgroundColor: '#FFD75E',
-    },
+  root: {
+    backgroundColor: '#FFC72C',
+    borderColor: 'transparent',
+    color: '#323130',
+    fontWeight: 'bold',
+    borderRadius: 15
+  },
+  rootHovered: {
+    backgroundColor: '#FFD75E',
+  },
+
+  rootPressed: {
+    backgroundColor: '#FFAA00',
+    borderColor: '#FFAA00',
+    color: 'black'
+  }
 };
 
 const StatusNavigation: React.FC = () => {
-  // Estado para armazenar o status ativo (RECEBIDO é o ativo na imagem)
+
   const [activeStatus, setActiveStatus] = React.useState<Status>('RECEBIDO');
 
   return (
@@ -47,7 +55,7 @@ const StatusNavigation: React.FC = () => {
         const stylesToUse = isActive ? primaryButtonStyles : defaultButtonStyles;
 
         return (
-          <ButtonComponent 
+          <ButtonComponent
             key={status}
             text={status}
             onClick={() => setActiveStatus(status)}

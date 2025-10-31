@@ -1,11 +1,9 @@
 import * as React from 'react';
 import { Stack, Text, IStackStyles } from '@fluentui/react';
-// Importe ou crie seus próprios estilos (CSS/SCSS) se necessário
 
-// Estilos para a barra amarela
 const headerStyles: IStackStyles = {
   root: {
-    backgroundColor: '#FFC72C', // Cor amarela da imagem
+    backgroundColor: '#FFC72C', 
     padding: '10px 20px',
     marginBottom: 20,
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
