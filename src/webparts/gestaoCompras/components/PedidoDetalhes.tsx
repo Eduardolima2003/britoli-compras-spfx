@@ -1,166 +1,87 @@
 import * as React from 'react';
-import { Stack, Text, Separator, DefaultButton, TextField, PrimaryButton, IStackTokens, IStackStyles } from '@fluentui/react';
 import { IPedido } from './IPedidos';
+import { Panel, PanelType, Stack, Text, Separator, DefaultButton, PrimaryButton, IStackTokens, FontIcon } from '@fluentui/react';
 
-
+// Define as propriedades que o componente de Detalhes receberá
 interface IPedidoDetalhesProps {
     pedido: IPedido;
+    isOpen: boolean;
+    onDismiss: () => void;
 }
 
-const fieldStackTokens: IStackTokens = { childrenGap: 5 };
-const mainStackTokens: IStackTokens = { childrenGap: 20 };
-const sectionStyles: IStackStyles = { root: { padding: 0 } };
+const itemTokens: IStackTokens = { childrenGap: 10 };
 
-const LIGHT_GRAY_BACKGROUND = '#d1d1d1ff';
-
-const textFieldBaseStyles = {
-    fieldGroup: {
-        backgroundColor: LIGHT_GRAY_BACKGROUND,
-        borderColor: 'transparent',
-    },
-    field: {
-        color: 'black',
-    }
+// Função para simular uma notificação sem usar alert()
+const showMessage = (message: string): void => {
+    console.log(`[ALERTA DE AÇÃO] ${message}`);
 };
 
-// Mapeia o status para a cor
-const getStatusColor = (status: string): string => {
-    switch (status) {
-        case 'Em Análise': return 'orange';
-        case 'Aprovado': return 'green';
-        case 'Recebido': return '#0078d4';
-        default: return 'gray';
-    }
-};
+/**
+ * Componente que exibe os detalhes completos de um pedido em um painel lateral.
+ */
+const PedidoDetalhes: React.FC<IPedidoDetalhesProps> = ({ pedido, isOpen, onDismiss }) => {
 
-export const PedidoDetalhes: React.FC<IPedidoDetalhesProps> = ({ pedido }) => {
+    const formatCurrency = (value: number): string => {
+        return `R$ ${value.toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+    };
 
-    if (!pedido) {
-        return <Text variant="large">Erro: Dados do pedido indisponíveis.</Text>;
-    }
+    const DetailItem: React.FC<{ label: string, value: string | JSX.Element }> = ({ label, value }) => (
+        <Stack horizontal tokens={{ childrenGap: 20 }} verticalAlign="center">
+            <Text variant="small" styles={{ root: { fontWeight: 'bold', minWidth: 150 } }}>{label}:</Text>
+            {typeof value === 'string' ? <Text variant="medium">{value}</Text> : value}
+        </Stack>
+    );
+
+    const headerText = `Detalhes do Pedido: ${pedido.Referencia}`;
 
     return (
-        <Stack tokens={mainStackTokens} styles={{ root: { padding: 10 } }}>
+        <Panel
+            isOpen={isOpen}
+            onDismiss={onDismiss}
+            headerText={headerText}
+            type={PanelType.medium}
+            onRenderFooterContent={() => (
+                <Stack horizontal tokens={{ childrenGap: 10 }} styles={{ root: { padding: '10px 0' } }}>
+                    <PrimaryButton
+                        text="Iniciar Processamento"
+                        onClick={() => {
+                            showMessage(`Pedido ${pedido.Referencia} enviado para processamento.`);
+                            onDismiss();
+                        }}
+                    />
+                    <DefaultButton text="Fechar" onClick={onDismiss} />
+                </Stack>
+            )}
+        >
+            <Stack tokens={itemTokens} styles={{ root: { padding: '20px 0' } }}>
 
-            {/* Cabeçalho da Seção */}
-            <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 10 }}>
-                <Text styles={{ root: { fontSize: '15px', fontWeight: 'bold' } }}>
-                    Pedido de cotação
-                </Text>
-                <DefaultButton text="NOVO PEDIDO" styles={{
-                    root: {
+                {/* Status do Pedido (Destacado) */}
+                <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 10 }}>
+                    <FontIcon iconName="Tag" style={{ fontSize: '20px', color: '#0078D4' }} />
+                    <Text variant="xLarge" styles={{ root: { fontWeight: 'bold' } }}>
+                        Status Atual: {pedido.Status}
+                    </Text>
+                </Stack>
 
-                        backgroundColor: 'gold',
-                        borderColor: 'gold',
-                        color: 'black',
-                        borderRadius: 15
-                    },
+                <Separator />
 
-                    rootHovered: {
-                        backgroundColor: '#FFCC00',
-                        borderColor: '#FFCC00',
-                        color: 'black'
-                    },
+                {/* Seção de Dados Principais */}
+                <Text variant="large" styles={{ root: { fontWeight: 'bold', marginTop: 10, marginBottom: 5 } }}>Informações Básicas</Text>
+                <DetailItem label="Referência" value={pedido.Referencia} />
+                <DetailItem label="Fornecedor" value={pedido.Fornecedor} />
+                <DetailItem label="Comprador" value={pedido.Comprador} />
+                <DetailItem label="Prioridade" value={pedido.Prioridade} />
 
-                    rootPressed: {
-                        backgroundColor: '#FFAA00',
-                        borderColor: '#FFAA00',
-                        color: 'black'
-                    }
-                }}
-                />
-            </Stack>
+                <Separator />
 
-            <Separator />
-
-            {/* Campos do Formulário */}
-            <Stack tokens={fieldStackTokens} styles={sectionStyles}>
-                {/* Referência */}
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Referência</Text>
-                <TextField
-                    readOnly
-                    value={pedido.Referencia}
-                    styles={textFieldBaseStyles}
-                />
-
-                {/* Estado (Com cor condicional) */}
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Estado</Text>
-                <TextField
-                    readOnly
-                    value={pedido.Status}
-                    styles={{
-                        fieldGroup: textFieldBaseStyles.fieldGroup,
-                        field: {
-                            color: getStatusColor(pedido.Status),
-                            fontWeight: 'bold'
-                        }
-                    }}
-                />
-
-                {/* Outros Campos */}
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Obra</Text>
-                <TextField readOnly value="XXXXX" styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Assunto</Text>
-                <TextField readOnly value="XXXXX" styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Data limite compra</Text>
-                <TextField readOnly value={"20/10/2025"} styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Data limite entrada em obra</Text>
-                <TextField readOnly value={"15/12/2025"} styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Buyer</Text>
-                <TextField readOnly value={pedido.Comprador} styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Referência do fornecedor</Text>
-                <TextField readOnly value="XXXXX" styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Requisitante</Text>
-                <TextField readOnly value="XXXXX" styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Tipo</Text>
-                <TextField readOnly value="XXXXX" styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Tipo de encomenda</Text>
-                <TextField readOnly value="XXXXX" styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Nome do fornecedor</Text>
-                <TextField readOnly value={pedido.Fornecedor} styles={textFieldBaseStyles} />
-
-                <Text variant="medium" styles={{ root: { fontWeight: 'bold' } }}>Preço seco</Text>
-                <TextField readOnly value="XXXXX" styles={textFieldBaseStyles} />
+                {/* Seção de Valores e Datas */}
+                <Text variant="large" styles={{ root: { fontWeight: 'bold', marginTop: 10, marginBottom: 5 } }}>Datas e Valores</Text>
+                <DetailItem label="Valor Total" value={formatCurrency(pedido.ValorTotal)} />
+                <DetailItem label="Data de Criação" value={pedido.DataCriacao.toLocaleDateString()} />
+                <DetailItem label="Entrega Estimada" value={pedido.DataEntregaEstimada.toLocaleDateString()} />
 
             </Stack>
-
-            <Separator />
-
-            {/* Botão GRVAR */}
-            <PrimaryButton
-                text="GRAVAR"
-                styles={{
-                    root: {
-                        backgroundColor: 'gold',
-                        borderColor: 'gold',
-                        color: 'black',
-                        borderRadius: 15
-                    },
-
-                    rootHovered: {
-                        backgroundColor: '#FFCC00',
-                        borderColor: '#FFCC00',
-                        color: 'black'
-                    },
-
-                    rootPressed: {
-                        backgroundColor: '#FFAA00',
-                        borderColor: '#FFAA00',
-                        color: 'black'
-                    }
-                }}
-            />
-
-        </Stack>
+        </Panel>
     );
 };
 

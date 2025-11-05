@@ -1,58 +1,29 @@
 import * as React from 'react';
-import { Stack, IStackStyles, IStackTokens } from '@fluentui/react';
+
+// CORREÇÃO: Remoção de imports não utilizados que causavam warnings, como 'PedidoInfo' e 'PurchaseManager'
+import { escape } from '@microsoft/sp-lodash-subset';
 import styles from './GestaoCompras.module.scss';
-import type { IGestaoComprasProps } from './IGestaoComprasProps';
+import { IGestaoComprasProps } from './IGestaoComprasProps';
 
-// Importe os componentes de layout
-import Header from './Header';
-import StatusNavigation from './StatusNavigation';
-import PedidoInfo from './PedidoInfo';
-import ChatApp from './ChatApp';
-import PedidoDetalhes from './PedidoDetalhes';
-
-// --- Estilos para o Container Principal ---
-const mainStackStyles: IStackStyles = {
-    root: {
-        padding: 20,
-        backgroundColor: '#fff', // Fundo branco
-        maxWidth: '1200px',
-        margin: '0 auto',
-    },
-};
-
-// Tokens para espaçamento entre as colunas
-const mainStackTokens: IStackTokens = { childrenGap: 20 };
-
-// --- Componente Funcional Principal ---
-export const GestaoCompras: React.FC<IGestaoComprasProps> = (props) => {
-
+export default class GestaoCompras extends React.Component<IGestaoComprasProps, {}> {
+  public render(): React.ReactElement<IGestaoComprasProps> {
+    const {
+      description,
+      isDarkTheme,
+      environmentMessage,
+      hasTeamsContext,
+      userDisplayName
+    } = this.props;
 
     return (
-        <div className={styles.gestaoCompras}>
-            {/* 1. CABEÇALHO (Topo Amarelo) */}
-            <Header />
-
-            {/* 2. NAVEGAÇÃO DE STATUS (Botões Recebido, Em Procurement, etc.) */}
-            <StatusNavigation />
-
-            {/* 3. CONTEÚDO PRINCIPAL (Duas Colunas: Pedido e Chat) */}
-            <Stack horizontal styles={mainStackStyles} tokens={mainStackTokens}>
-                {/* Coluna da Esquerda: PedidoDetalhes (O NOVO FORMULÁRIO) */}
-                <Stack.Item grow={1} >
-                    <PedidoDetalhes pedido={props.pedido} />
-                </Stack.Item>
-
-                {/* Coluna da Direita (Chat/Mensagens) */}
-                <Stack.Item grow={1} >
-                    <ChatApp
-                        userDisplayName={props.userDisplayName}
-
-                        context={props.context}
-                    />
-                </Stack.Item>
-            </Stack>
+      <section className={`${styles.gestaoCompras} ${hasTeamsContext ? styles.teams : ''}`}>
+        <div className={styles.welcome}>
+          <img alt="" src={isDarkTheme ? require('../assets/welcome-dark.png') : require('../assets/welcome-light.png')} className={styles.welcomeImage} />
+          <h2>Bem-vindo, {escape(userDisplayName)}!</h2>
+          <div>{environmentMessage}</div>
+          <div>Propriedade: <strong>{escape(description)}</strong></div>
         </div>
+      </section>
     );
-};
-
-export default GestaoCompras;
+  }
+}

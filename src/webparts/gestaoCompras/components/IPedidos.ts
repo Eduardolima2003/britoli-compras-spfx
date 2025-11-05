@@ -1,11 +1,11 @@
 export interface IPedido {
     Id: number;
-    Referencia: string; // Ex: BR-2025-1001
-    Fornecedor: string; // Ex: Tech Solutions Ltda
-    ValorTotal: number; // Ex: 15500.00
-    DataCriacao: Date;
-    DataEntregaEstimada: Date;
-    Status: string; // Ex: Recebido, Em Análise, Aprovado
-    Comprador: string; // Ex: João Silva
-    Prioridade: 'Baixa' | 'Normal' | 'Alta';
+    Referencia: string; // Coluna Referencia (Texto)
+    Fornecedor: string; // Coluna Fornecedor (Texto)
+    Comprador: string; // Coluna Comprador (Pessoa ou Grupo)
+    Status: string; // Coluna Status (Escolha)
+    ValorTotal: number; // Coluna ValorTotal (Número/Moeda)
+    Prioridade: string; // Coluna Prioridade (Escolha)
+    DataCriacao: Date; // Coluna Created (SharePoint padrão)
+    DataEntregaEstimada: Date; // Coluna DataEntregaEstimada (Data)
 }

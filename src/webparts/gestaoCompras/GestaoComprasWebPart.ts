@@ -7,19 +7,14 @@ import {
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
-import { IPedido } from './components/IPedidos';
 import { getSP } from "../../pnpjsconfig";
-
+import PurchaseManager from './components/PurchaseManager';
+import { IPurchaseManagerProps } from './components/IPurchaseManagerProps';
 import * as strings from 'GestaoComprasWebPartStrings';
-import GestaoCompras from './components/GestaoCompras';
-import { IGestaoComprasProps } from './components/IGestaoComprasProps';
+
 
 export interface IGestaoComprasWebPartProps {
   description: string;
-  isDarkTheme: boolean;
-  environmentMessage: string;
-  hasTeamsContext: boolean;
-  userDisplayName: string;
 }
 
 export default class GestaoComprasWebPart extends BaseClientSideWebPart<IGestaoComprasWebPartProps> {
@@ -29,27 +24,12 @@ export default class GestaoComprasWebPart extends BaseClientSideWebPart<IGestaoC
 
   public render(): void {
 
-    const mockPedido: IPedido = {
-        Id: 1,
-        Referencia: 'BR-2025-1001',
-        Fornecedor: 'Alpha Suprimentos S/A',
-        ValorTotal: 15500.00,
-        DataCriacao: new Date(2025, 9, 20), // 20 de Outubro
-        DataEntregaEstimada: new Date(2025, 11, 15), // 15 de Dezembro
-        Status: 'Em Análise',
-        Comprador: this.context.pageContext.user.displayName,
-        Prioridade: 'Alta'
-    };
-
-    const element: React.ReactElement<IGestaoComprasProps> = React.createElement(
-      GestaoCompras as React.JSXElementConstructor<IGestaoComprasProps>,
+    // ESSENCIAL: Passando o contexto (this.context) para o PurchaseManager.
+    const element: React.ReactElement<IPurchaseManagerProps> = React.createElement(
+      PurchaseManager,
       {
-        context: this.context,
-        isDarkTheme: this._isDarkTheme,
-        environmentMessage: this._environmentMessage,
-        hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName,
-        pedido: mockPedido
+        title: 'Gestão de Compras Principal',
+        context: this.context
       }
     );
 
@@ -57,26 +37,29 @@ export default class GestaoComprasWebPart extends BaseClientSideWebPart<IGestaoC
   }
 
   protected onInit(): Promise<void> {
-    getSP(this.context); 
+    
+    getSP(this.context);
 
-    return this._getEnvironmentMessage().then(message => {
+    
+    return this._getEnvironmentMessage().then((message: string) => {
       this._environmentMessage = message;
     });
   }
 
+  
   private _getEnvironmentMessage(): Promise<string> {
-    if (!!this.context.sdks.microsoftTeams) { // running in Teams, office.com or Outlook
+    if (!!this.context.sdks.microsoftTeams) {
       return this.context.sdks.microsoftTeams.teamsJs.app.getContext()
         .then(context => {
           let environmentMessage: string = '';
           switch (context.app.host.name) {
-            case 'Office': // running in Office
+            case 'Office':
               environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOffice : strings.AppOfficeEnvironment;
               break;
-            case 'Outlook': // running in Outlook
+            case 'Outlook':
               environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentOutlook : strings.AppOutlookEnvironment;
               break;
-            case 'Teams': // running in Teams
+            case 'Teams':
             case 'TeamsModern':
               environmentMessage = this.context.isServedFromLocalhost ? strings.AppLocalEnvironmentTeams : strings.AppTeamsTabEnvironment;
               break;
