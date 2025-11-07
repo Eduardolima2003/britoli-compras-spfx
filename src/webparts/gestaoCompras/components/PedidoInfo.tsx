@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Stack, Text, Separator, DefaultButton, IStackTokens, IStackStyles } from '@fluentui/react';
-import { IPedido } from './IPedidos'; 
+import { IPedido } from './IPedidos';
 
 
 interface IPedidoInfoProps {
@@ -24,7 +24,7 @@ export const PedidoInfo: React.FC<IPedidoInfoProps> = ({ pedido }) => {
             <Text variant="xxLarge" styles={{ root: { fontWeight: 'bold' } }}>
                 Detalhes do Pedido <span style={{ color: '#0078d4' }}>#{pedido.Referencia}</span>
             </Text>
-            
+
             <Stack horizontal styles={sectionStyles} tokens={infoStackTokens}>
                 <Stack.Item grow={1}>
                     <Text variant="mediumPlus" styles={{ root: { fontWeight: 'bold' } }}>
@@ -39,7 +39,7 @@ export const PedidoInfo: React.FC<IPedidoInfoProps> = ({ pedido }) => {
             </Stack>
 
             <Separator />
-            
+
             <Stack tokens={infoStackTokens} styles={sectionStyles}>
                 <Text variant="large" styles={{ root: { fontWeight: '600' } }}>Informações Financeiras</Text>
                 <Text>
@@ -52,14 +52,14 @@ export const PedidoInfo: React.FC<IPedidoInfoProps> = ({ pedido }) => {
                     **Comprador:** {pedido.Comprador}
                 </Text>
             </Stack>
-            
+
             <Stack tokens={infoStackTokens} styles={sectionStyles}>
                 <Text variant="large" styles={{ root: { fontWeight: '600' } }}>Datas e Prazos</Text>
                 <Text>
                     **Data de Criação:** {dateFormatter.format(pedido.DataCriacao)}
                 </Text>
                 <Text>
-                    **Entrega Estimada:** {dateFormatter.format(pedido.DataEntregaEstimada)}
+                    **Entrega Estimada:** {dateFormatter.format(pedido.DataEntrega)}
                 </Text>
             </Stack>
 

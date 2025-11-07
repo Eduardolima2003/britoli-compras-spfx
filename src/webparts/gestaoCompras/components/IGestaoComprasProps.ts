@@ -2,11 +2,13 @@ import { WebPartContext } from "@microsoft/sp-webpart-base";
 import { IPedido } from "./IPedidos";
 
 export interface IGestaoComprasProps {
-  description: string; 
+  description: string;
   isDarkTheme: boolean;
   environmentMessage: string;
   hasTeamsContext: boolean;
   userDisplayName: string;
-  context: WebPartContext; 
+  context: WebPartContext;
   pedido: IPedido;
+
+
 }

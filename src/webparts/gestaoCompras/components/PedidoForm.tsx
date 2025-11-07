@@ -1,203 +1,257 @@
 import * as React from 'react';
-import { useState } from 'react';
-// Importação de tipos para o evento de clique do Fluent UI
-import { MouseEventHandler } from 'react';
-import { Panel, PanelType, Stack, TextField, PrimaryButton, DefaultButton, Dropdown, IDropdownOption, DatePicker, Spinner, SpinnerSize, MessageBar, MessageBarType } from '@fluentui/react';
-import { DataService } from '../services/DataService';
+import {
+    Panel, PanelType, PrimaryButton, DefaultButton, TextField,
+    DatePicker, Dropdown, IDropdownOption, Stack, MessageBar, MessageBarType
+} from '@fluentui/react';
 import { WebPartContext } from '@microsoft/sp-webpart-base';
-// import { DayPickerStrings } from './FluentUIStrings'; // Opcional, descomente se usar este arquivo
+import { DataService } from '../services/DataService';
+import { IPedido } from './IPedidos';
 
-// Opções de Prioridade (devem ser as mesmas do SharePoint)
+// Opções do Dropdown de Prioridade
 const priorityOptions: IDropdownOption[] = [
-    { key: 'Alta', text: 'Alta' },
-    { key: 'Média', text: 'Média' },
-    { key: 'Baixa', text: 'Baixa' },
+    { key: 'BAIXA', text: 'Baixa' },
+    { key: 'MÉDIA', text: 'Média' },
+    { key: 'ALTA', text: 'Alta' },
+    { key: 'URGENTE', text: 'Urgente' },
 ];
 
-// Estado inicial do formulário
-const initialFormState = {
-    Title: '',
-    Referencia: '',
-    Fornecedor: '',
-    CompradorEmail: '',
-    ValorTotal: 0,
-    Prioridade: 'Média',
-    DataEntregaEstimada: new Date(),
-};
-
-// Propriedades do componente
+// Define as propriedades estendidas para o formulário
 interface IPedidoFormProps {
     isOpen: boolean;
-    context: WebPartContext;
     onDismiss: () => void;
-    onSaveSuccess: () => void; // Para recarregar os dados
+    onSaveSuccess: () => void;
+    context: WebPartContext;
+    pedidoEmEdicao?: IPedido;
 }
 
-/**
- * Componente do formulário para adicionar um novo pedido.
- */
-const PedidoForm: React.FC<IPedidoFormProps> = ({ isOpen, context, onDismiss, onSaveSuccess }) => {
-
-    const [formData, setFormData] = useState(initialFormState);
-    const [isSaving, setIsSaving] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-
+const PedidoForm: React.FC<IPedidoFormProps> = ({
+    isOpen, onDismiss, onSaveSuccess, context, pedidoEmEdicao
+}) => {
+    // Inicializa o DataService uma única vez
     const dataService = React.useMemo(() => new DataService(context), [context]);
 
-    const handleChange = (field: keyof typeof initialFormState, value: string | Date | number): void => {
-        setError(null);
+    // Define o estado inicial do formulário
+    const initialFormState = {
+        Title: '',
+        Referencia: '',
+        Fornecedor: '',
+        Comprador: '', // Campo de e-mail/texto no formulário
+        ValorTotal: 0,
+        Prioridade: priorityOptions[0].key.toString(), // Padrão: Baixa
+        DataEntrega: undefined as Date | undefined,
+        ID: undefined as number | undefined // ID só existe se estiver em Edição
+    };
 
-        let finalValue: string | Date | number = value;
+    const [formData, setFormData] = React.useState(initialFormState);
+    const [isLoading, setIsLoading] = React.useState(false);
+    const [error, setError] = React.useState<string | null>(null);
 
-        if (field === 'ValorTotal' && typeof value === 'string') {
-            // Remove pontos de milhar, substitui vírgula por ponto para converter para float
-            finalValue = parseFloat(value.replace(/\./g, '').replace(',', '.')) || 0;
+    // EFEITO para carregar os dados do pedidoEmEdicao ao abrir o painel em modo de edição
+    React.useEffect(() => {
+        if (pedidoEmEdicao) {
+            setFormData({
+                Title: pedidoEmEdicao.Title,
+                Referencia: pedidoEmEdicao.Referencia,
+                Fornecedor: pedidoEmEdicao.Fornecedor,
+                Comprador: pedidoEmEdicao.Comprador,
+                ValorTotal: pedidoEmEdicao.ValorTotal,
+                Prioridade: pedidoEmEdicao.Prioridade,
+                DataEntrega: pedidoEmEdicao.DataEntrega,
+                ID: pedidoEmEdicao.ID
+            });
+        } else {
+            // Limpa o formulário para um novo pedido
+            setFormData(initialFormState);
         }
+    }, [pedidoEmEdicao, isOpen]); // Dispara sempre que o pedidoEmEdicao ou o estado de abertura mudar
 
-        setFormData(prev => ({ ...prev, [field]: finalValue }));
-    };
+    // Verifica se está em modo de edição
+    const isEditing = !!pedidoEmEdicao;
+    const panelTitle = isEditing ? `Editar Pedido: ${formData.Title}` : 'Cadastrar Novo Pedido';
+    const primaryButtonText = isEditing ? 'Atualizar Pedido' : 'Salvar Pedido';
 
-    // Função para formatar o valor do MaskedTextField na exibição
-    const formatValueTotal = (value: number): string => {
-        return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, useGrouping: true });
-    };
+
+    // Handlers de Mudança de Campo
+    const handleChange = React.useCallback((
+        event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>,
+        newValue?: string,
+        fieldName?: keyof typeof formData
+    ): void => {
+        if (fieldName && newValue !== undefined) {
+            setFormData(prev => ({
+                ...prev,
+                [fieldName]: newValue
+            }));
+        }
+    }, []);
+
+    const handleDateChange = React.useCallback((date?: Date): void => {
+        setFormData(prev => ({
+            ...prev,
+            DataEntrega: date
+        }));
+    }, []);
+
+    const handleDropdownChange = React.useCallback((
+        _event: React.FormEvent<HTMLDivElement>,
+        option?: IDropdownOption
+    ): void => {
+        if (option) {
+            setFormData(prev => ({
+                ...prev,
+                Prioridade: option.key.toString()
+            }));
+        }
+    }, []);
+
+    // Validação Básica
+    const isValid = formData.Title && formData.Referencia && formData.Fornecedor && formData.Comprador && formData.DataEntrega && formData.ValorTotal >= 0;
 
     /**
-     * CORREÇÃO APLICADA AQUI:
-     * A função agora aceita um evento de Mouse/React.MouseEvent, que é o que o PrimaryButton do Fluent UI espera.
-     * Chamamos event.preventDefault() para evitar que o clique do botão nativo cause navegação.
+     * Salva ou Atualiza o pedido
      */
-    const handleSubmit: MouseEventHandler<unknown> = async (event): Promise<void> => {
-        // Usa `event.preventDefault()` no evento do botão
-        if (event && 'preventDefault' in event) {
-            event.preventDefault();
-        }
-
-        setError(null);
-
-        // Validação básica
-        if (!formData.Title || !formData.Referencia || !formData.Fornecedor || !formData.CompradorEmail || formData.ValorTotal <= 0) {
-            setError("Por favor, preencha todos os campos obrigatórios e garanta que o Valor Total seja maior que zero.");
+    const handleSave = async (): Promise<void> => {
+        if (!isValid) {
+            setError("Por favor, preencha todos os campos obrigatórios e verifique se o Valor Total é válido.");
             return;
         }
 
-        setIsSaving(true);
+        setIsLoading(true);
+        setError(null);
 
         try {
-            await dataService.addNewPedido({
-                ...formData,
-                Status: 'RECEBIDO', // Novo pedido sempre começa com status RECEBIDO
-            });
+            // Cria o objeto base para a API
+            const pedidoApi: IPedido = {
+                ID: formData.ID || 0, // 0 se for novo
+                Title: formData.Title,
+                Referencia: formData.Referencia,
+                Fornecedor: formData.Fornecedor,
+                Comprador: formData.Comprador,
+                ValorTotal: formData.ValorTotal,
+                Prioridade: formData.Prioridade,
+                DataEntrega: formData.DataEntrega as Date, // Garantido pela validação
+                Status: pedidoEmEdicao?.Status || "RECEBIDO", // Mantém o status em edição ou define como RECEBIDO
+                DataCriacao: pedidoEmEdicao?.DataCriacao || new Date()
+            };
+
+            if (isEditing && formData.ID) {
+                // Modo Edição: Chama o método de UPDATE
+                await dataService.updatePedido(pedidoApi);
+            } else {
+                // Modo Criação: Chama o método de CREATE
+                await dataService.addPedido(pedidoApi);
+            }
 
             // Sucesso
-            setFormData(initialFormState);
             onSaveSuccess();
-            onDismiss();
 
-        } catch (e: unknown) {
-            const errorMessage = e instanceof Error ? e.message : 'Erro desconhecido ao salvar o pedido.';
-            setError(errorMessage);
+        } catch (e) {
+            console.error(isEditing ? "Erro ao atualizar pedido:" : "Erro ao salvar novo pedido:", e);
+            setError(`Ocorreu um erro ao ${isEditing ? 'atualizar' : 'salvar'} o pedido. Detalhe: ${e.message || 'Erro desconhecido.'}`);
         } finally {
-            setIsSaving(false);
+            setIsLoading(false);
         }
     };
 
-    // Renderiza o rodapé do painel (botões de Ação)
-    const onRenderFooterContent = (): JSX.Element => {
-        return (
-            <Stack horizontal tokens={{ childrenGap: 10 }} styles={{ root: { padding: '10px 0' } }}>
-                <PrimaryButton
-                    text={isSaving ? "Salvando..." : "Salvar Pedido"}
-                    onClick={handleSubmit}
-                    disabled={isSaving}
-                />
-                <DefaultButton text="Cancelar" onClick={onDismiss} disabled={isSaving} />
-            </Stack>
-        );
-    };
-
-    if (!isOpen) return null;
 
     return (
         <Panel
+            headerText={panelTitle}
             isOpen={isOpen}
             onDismiss={onDismiss}
-            headerText="Cadastrar Novo Pedido"
-            type={PanelType.large}
-            onRenderFooterContent={onRenderFooterContent}
+            type={PanelType.medium}
+            closeButtonAriaLabel="Fechar"
             isFooterAtBottom={true}
-        >
-            {/* Mensagem de Erro (se houver) */}
-            {error && (
-                <MessageBar messageBarType={MessageBarType.error} isMultiline={true} dismissButtonAriaLabel="Fechar">
-                    {error}
-                </MessageBar>
+            onRenderFooterContent={() => (
+                <Stack horizontal tokens={{ childrenGap: 10 }} styles={{ root: { padding: '10px 0' } }}>
+                    <PrimaryButton
+                        onClick={handleSave}
+                        text={isLoading ? (isEditing ? "Atualizando..." : "Salvando...") : primaryButtonText}
+                        disabled={isLoading || !isValid}
+                    />
+                    <DefaultButton
+                        onClick={onDismiss}
+                        text="Cancelar"
+                        disabled={isLoading}
+                    />
+                </Stack>
             )}
-
-            {/* Conteúdo do Formulário */}
-            {/* Removemos a tag <form> pois o Fluent UI Button não é um submit nativo */}
-            <Stack tokens={{ childrenGap: 15 }} style={{ padding: '10px 0' }}>
+        >
+            <Stack tokens={{ childrenGap: 15 }}>
+                {error && (
+                    <MessageBar messageBarType={MessageBarType.error}>
+                        {error}
+                    </MessageBar>
+                )}
 
                 <TextField
-                    label="Título (Obrigatório)"
+                    label="Título do Pedido"
+                    required
                     value={formData.Title}
-                    onChange={(_, newValue) => handleChange('Title', newValue || '')}
-                    required
+                    onChange={(e, v) => handleChange(e, v, 'Title')}
                 />
-
                 <TextField
-                    label="Referência (Obrigatório)"
+                    label="Referência/SKU"
+                    required
                     value={formData.Referencia}
-                    onChange={(_, newValue) => handleChange('Referencia', newValue || '')}
-                    required
+                    onChange={(e, v) => handleChange(e, v, 'Referencia')}
                 />
-
                 <TextField
-                    label="Fornecedor (Obrigatório)"
+                    label="Fornecedor"
+                    required
                     value={formData.Fornecedor}
-                    onChange={(_, newValue) => handleChange('Fornecedor', newValue || '')}
-                    required
+                    onChange={(e, v) => handleChange(e, v, 'Fornecedor')}
                 />
-
-                {/* Campo Comprador (E-mail) */}
                 <TextField
-                    label="Comprador (E-mail - Obrigatório)"
-                    placeholder="ex: usuario@dominio.com"
-                    value={formData.CompradorEmail}
-                    onChange={(_, newValue) => handleChange('CompradorEmail', newValue || '')}
+                    label="Comprador (E-mail)"
+                    description="Insira o e-mail completo do comprador registrado no SharePoint."
                     required
-                    description="Use o e-mail completo do Comprador. O sistema buscará o ID do usuário."
+                    value={formData.Comprador}
+                    onChange={(e, v) => handleChange(e, v, 'Comprador')}
                 />
 
-                {/* Campo de Valor Total formatado */}
+                {/* O input de valor é tratado como string, mas convertido para number */}
                 <TextField
                     label="Valor Total (R$)"
-                    value={formatValueTotal(formData.ValorTotal)}
-                    onChange={(_, newValue) => handleChange('ValorTotal', newValue || '0')}
-                    iconProps={{ iconName: 'Money' }}
                     required
-                    type="text"
-                    inputMode="numeric"
-                    description="Insira o valor usando vírgula para decimais."
+                    value={formData.ValorTotal.toString()}
+                    onChange={(e, v) => {
+                        const numericValue = v ? parseFloat(v.replace(',', '.')) : 0;
+                        setFormData(prev => ({
+                            ...prev,
+                            ValorTotal: isNaN(numericValue) ? 0 : numericValue
+                        }));
+                    }}
+                    type="number"
+                    min="0"
+                    step="0.01"
                 />
 
                 <Dropdown
                     label="Prioridade"
                     selectedKey={formData.Prioridade}
                     options={priorityOptions}
-                    onChange={(_, option) => handleChange('Prioridade', option?.key as string || 'Média')}
+                    onChange={handleDropdownChange}
+                    required
                 />
 
                 <DatePicker
-                    label="Data de Entrega Estimada"
-                    onSelectDate={(date) => handleChange('DataEntregaEstimada', date || new Date())}
-                    value={formData.DataEntregaEstimada}
-                    placeholder="Selecione uma data..."
+                    label="Data de Entrega Desejada"
                     isRequired={true}
-                // dayPickerStrings={DayPickerStrings}
+                    placeholder="Selecione uma data..."
+                    value={formData.DataEntrega}
+                    onSelectDate={handleDateChange}
+                    formatDate={(date) => date.toLocaleDateString()}
                 />
 
-                {isSaving && <Spinner size={SpinnerSize.small} label="Salvando pedido..." />}
+                {/* Se estiver editando, mostre o ID */}
+                {isEditing && formData.ID && (
+                    <TextField
+                        label="ID do Pedido"
+                        value={formData.ID.toString()}
+                        disabled
+                    />
+                )}
             </Stack>
         </Panel>
     );

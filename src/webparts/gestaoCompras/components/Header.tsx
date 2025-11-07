@@ -3,7 +3,7 @@ import { Stack, Text, IStackStyles } from '@fluentui/react';
 
 const headerStyles: IStackStyles = {
   root: {
-    backgroundColor: '#FFC72C', 
+    backgroundColor: '#FFC72C',
     padding: '10px 20px',
     marginBottom: 20,
     boxShadow: '0 2px 4px rgba(0,0,0,0.1)',

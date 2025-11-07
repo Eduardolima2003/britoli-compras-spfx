@@ -1,139 +1,150 @@
-import { IPedido } from '../components/IPedidos';
-import { SPFI } from '@pnp/sp';
-import { getSP } from '../../../pnpjsconfig';
 import { WebPartContext } from '@microsoft/sp-webpart-base';
-import "@pnp/sp/items";
+import { SPFI, spfi, SPFx } from '@pnp/sp';
 import "@pnp/sp/lists";
+import "@pnp/sp/items";
 import "@pnp/sp/webs";
 import "@pnp/sp/site-users/web";
-
-// Usando o nome EXATO da sua lista
-const LIST_NAME = "Mensagens de Compra";
+import { IPedido } from '../components/IPedidos';
 
 /**
- * Interface auxiliar para o objeto de dados que será enviado ao SharePoint.
- */
-interface INewPedidoData {
-    Title: string;
-    Referencia: string;
-    Fornecedor: string;
-    Status: string;
-    ValorTotal: number;
-    Prioridade: string;
-    DataEntregaEstimada: Date;
-    CompradorId: number; // ID do usuário do SharePoint
-}
-
-/**
- * Serviço responsável por interagir com a lista do SharePoint usando PnPjs.
+ * Serviço de dados para interagir com a lista de pedidos no SharePoint.
  */
 export class DataService {
-    private _sp: SPFI;
+    private sp: SPFI;
+    private readonly listTitle: string = "Mensagens de Compra";
+    private readonly CAMPO_DATA_ENTREGA = 'DataEntregaEstimada';
 
-    constructor(context: WebPartContext) {
-        this._sp = getSP(context);
+    constructor(private context: WebPartContext) {
+        this.sp = spfi().using(SPFx(this.context));
     }
 
-    /**
-     * Busca pedidos filtrando pelo campo Status na lista do SharePoint.
-     */
-    public async getPedidosByStatus(status: string): Promise<IPedido[]> {
-
+    private async getUserIdByEmail(email: string): Promise<number> {
+        if (!email) {
+            return 0;
+        }
         try {
-            // Seleciona os campos
-            const items = await this._sp.web.lists.getByTitle(LIST_NAME).items
-                .select(
-                    "Id",
-                    "Referencia",
-                    "Fornecedor",
-                    "Comprador/Title",
-                    "Status",
-                    "ValorTotal",
-                    "Prioridade",
-                    "DataEntregaEstimada",
-                    "Created"
-                )
-                .expand("Comprador")
+            // Usa o PnP para buscar o usuário pelo login (que geralmente é o e-mail)
+            const user = await this.sp.web.siteUsers.getByLoginName(`i:0#.f|membership|${email}`).select("Id")();
+            return user.Id;
+        } catch (e) {
+            console.error(`Usuário com e-mail ${email} não encontrado ou erro de permissão:`, e);
+            // IMPORTANTE: Se o usuário não for encontrado, lança-se um erro para o formulário tratar
+            throw new Error(`O comprador '${email}' não foi encontrado no SharePoint ou você não tem permissão para buscá-lo.`);
+        }
+    }
+
+    private mapToIPedido(item: any): IPedido {
+        const dataCriacao = item.Created ? new Date(item.Created) : new Date();
+        const dataEntrega = item[this.CAMPO_DATA_ENTREGA] ? new Date(item[this.CAMPO_DATA_ENTREGA]) : undefined;
+        const compradorValor = item.Comprador && item.Comprador.EMail ? item.Comprador.EMail :
+            (item.Comprador && item.Comprador.Title ? item.Comprador.Title : "N/D");
+
+        return {
+            ID: item.ID,
+            Title: item.Title || "N/D",
+            Status: item.Status || "RECEBIDO",
+            Prioridade: item.Prioridade || "BAIXA",
+            Fornecedor: item.Fornecedor || "N/D",
+            Comprador: compradorValor,
+            Referencia: item.Referencia || "N/D",
+            ValorTotal: item.ValorTotal || 0,
+            DataCriacao: dataCriacao,
+            DataEntrega: dataEntrega,
+        };
+    }
+
+    public async getPedidosByStatus(status: string): Promise<IPedido[]> {
+        try {
+
+            let selectFields = [
+                "ID", "Title", "Status", "Prioridade", "Fornecedor",
+                "Referencia", "ValorTotal", "Created",
+                this.CAMPO_DATA_ENTREGA
+            ];
+
+            // Adicionando a projeção do campo Comprador (Pessoa/Grupo)
+            selectFields.push("Comprador/Title");
+            //
+            selectFields.push("Comprador/Title", "Comprador/EMail");
+
+            const items = await this.sp.web.lists.getByTitle(this.listTitle).items
                 .filter(`Status eq '${status}'`)
-                .orderBy("Created", false)
+                .expand("Comprador")
+                .select(...selectFields)
                 ();
 
-            // Mapeia os dados brutos do SharePoint para a interface IPedido
-            const pedidos: IPedido[] = items.map(item => ({
-                Id: item.Id,
-                Referencia: item.Referencia || 'N/A',
-                Fornecedor: item.Fornecedor || 'Não Informado',
-                Comprador: item.Comprador?.Title || 'Sem Comprador',
-                Status: item.Status || 'Status Desconhecido',
-                ValorTotal: item.ValorTotal || 0,
-                Prioridade: item.Prioridade || 'Baixa',
-                DataCriacao: new Date(item.Created),
-                DataEntregaEstimada: item.DataEntregaEstimada ? new Date(item.DataEntregaEstimada) : new Date(),
-            }));
 
-            return pedidos;
-
-        } catch (error) {
-            console.error(`Erro ao buscar pedidos na lista '${LIST_NAME}'.`, error);
-            return [];
+            return items.map(this.mapToIPedido.bind(this));
+        } catch (e) {
+            console.error("Erro ao buscar pedidos por status:", e);
+            throw e;
         }
     }
 
-    /**
-     * Busca o ID do usuário do SharePoint (User Id) a partir do seu e-mail de login.
-     */
-    private async getUserIdByLoginName(loginName: string): Promise<number> {
-        if (!loginName) return 0;
+    public async addPedido(pedido: Omit<IPedido, 'ID' | 'DataCriacao'>): Promise<void> {
         try {
-            // Chamada ensureUser
-            const userResult = await this._sp.web.ensureUser(loginName.trim());
-            // Acessa o ID aninhado dentro da propriedade 'data'
-            return userResult.data.Id;
-        } catch (error) {
-            console.error("Erro ao buscar ID do usuário:", error);
-            // Fallback: Tenta usar o usuário atual se o e-mail inserido não for encontrado
-            try {
-                // Chamada currentUser
-                const currentUser = await this._sp.web.currentUser;
-                console.warn("E-mail não encontrado, usando o usuário logado como Comprador.");
-                // CORREÇÃO FINAL: Usando Type Assertion para acessar o ID (que sabemos ser maiúsculo em runtime)
-                return (currentUser as any).Id;
-            } catch {
-                return 0;
+
+            let compradorId = 0;
+            if (pedido.Comprador) {
+
+                compradorId = await this.getUserIdByEmail(pedido.Comprador);
             }
+
+            const itemPayload: any = {
+                Title: pedido.Title,
+                Status: pedido.Status,
+                Prioridade: pedido.Prioridade,
+                Fornecedor: pedido.Fornecedor,
+
+                CompradorId: compradorId > 0 ? compradorId : null,
+                Referencia: pedido.Referencia,
+                ValorTotal: pedido.ValorTotal,
+            };
+
+            if (pedido.DataEntrega) {
+                itemPayload[this.CAMPO_DATA_ENTREGA] = pedido.DataEntrega.toISOString();
+            }
+
+            await this.sp.web.lists.getByTitle(this.listTitle).items.add(itemPayload);
+        } catch (e) {
+            console.error("Erro ao adicionar pedido:", e);
+            throw e;
         }
     }
 
-    /**
-     * Adiciona um novo pedido de compra à lista.
-     */
-    public async addNewPedido(data: Omit<INewPedidoData, 'CompradorId'> & { CompradorEmail: string }): Promise<void> {
 
-        // 1. Busca o ID do usuário usando o e-mail fornecido
-        const userId = await this.getUserIdByLoginName(data.CompradorEmail);
-
-        if (!userId) {
-            throw new Error("Não foi possível identificar o Comprador no SharePoint. Verifique se o e-mail está correto.");
-        }
-
-        // 2. Monta o payload (o objeto a ser enviado)
-        const itemPayload: INewPedidoData = {
-            Title: data.Title,
-            Referencia: data.Referencia,
-            Fornecedor: data.Fornecedor,
-            Status: data.Status,
-            ValorTotal: data.ValorTotal,
-            Prioridade: data.Prioridade,
-            DataEntregaEstimada: data.DataEntregaEstimada,
-            CompradorId: userId,
-        };
-
-        // 3. Salva no SharePoint
+    public async updatePedido(pedido: IPedido): Promise<void> {
         try {
-            await this._sp.web.lists.getByTitle(LIST_NAME).items.add(itemPayload);
-        } catch (error) {
-            console.error(`Erro ao adicionar novo pedido na lista '${LIST_NAME}'.`, error);
-            throw new Error(`Erro ao salvar pedido: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+
+            let compradorId = 0;
+            if (pedido.Comprador) {
+
+                compradorId = await this.getUserIdByEmail(pedido.Comprador);
+            }
+
+            const itemPayload: any = {
+                Title: pedido.Title,
+                Status: pedido.Status,
+                Prioridade: pedido.Prioridade,
+                Fornecedor: pedido.Fornecedor,
+                CompradorId: compradorId > 0 ? compradorId : null,
+                Referencia: pedido.Referencia,
+                ValorTotal: pedido.ValorTotal,
+            };
+
+            if (pedido.DataEntrega) {
+                itemPayload[this.CAMPO_DATA_ENTREGA] = pedido.DataEntrega.toISOString();
+            }
+
+            await this.sp.web.lists.getByTitle(this.listTitle).items.getById(pedido.ID).update(itemPayload);
+        } catch (e) {
+            console.error("Erro ao atualizar pedido:", e);
+            throw e;
         }
+    }
+
+
+    public async deletePedido(id: number): Promise<void> {
+        await this.sp.web.lists.getByTitle(this.listTitle).items.getById(id).delete();
     }
 }

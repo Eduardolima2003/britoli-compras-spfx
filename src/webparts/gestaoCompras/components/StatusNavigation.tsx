@@ -23,7 +23,6 @@ const defaultButtonStyles: IButtonStyles = {
   },
 };
 
-// Estilo do botão ativo (Primary)
 const primaryButtonStyles: IButtonStyles = {
   root: {
     backgroundColor: '#FFC72C',

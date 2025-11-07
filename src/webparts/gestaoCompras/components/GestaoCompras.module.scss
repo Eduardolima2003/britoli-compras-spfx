@@ -1,35 +1,74 @@
-@import '~@fluentui/react/dist/sass/References.scss';
+.novoPedidoButton :global {
 
-.gestaoCompras {
-  overflow: hidden;
-  padding: 1em;
-  color: "[theme:bodyText, default: #323130]";
-  color: var(--bodyText);
 
-  &.teams {
-    font-family: $ms-font-family-fallbacks;
+  .ms-Button.ms-Button--primary {
+    background-color: #107c10 !important;
+    border: none !important;
+    border-radius: 4px !important;
+
+    &:hover {
+      background-color: #0c5a0c !important;
+    }
+
+    .ms-Button-label,
+    .ms-Button-icon {
+      color: white !important;
+      font-weight: 600 !important;
+    }
   }
 }
 
-.welcome {
-  text-align: center;
-}
+.statusTabDefault :global,
+.statusTabActive :global {
 
-.welcomeImage {
-  width: 100%;
-  max-width: 420px;
-}
 
-.links {
-  a {
-    text-decoration: none;
-    color: "[theme:link, default:#03787c]";
-    color: var(--link); // note: CSS Custom Properties support is limited to modern browsers only
+  .ms-Pivot-link {
+
+    border-radius: 50px !important;
+    padding: 8px 16px !important;
+    margin: 0 4px 0 0 !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    height: auto !important;
+    line-height: 1 !important;
+    border: none !important;
+    margin-bottom: 0 !important;
 
     &:hover {
-      text-decoration: underline;
-      color: "[theme:linkHovered, default: #014446]";
-      color: var(--linkHovered); // note: CSS Custom Properties support is limited to modern browsers only
+
+      background-color: #eaeaea !important;
     }
+  }
+
+  .ms-Pivot-linkText {
+    font-weight: 600 !important;
+    color: #323130 !important;
+  }
+}
+
+
+.statusTabDefault :global {
+  .ms-Pivot-link {
+    background-color: #f3f2f1 !important;
+
+  }
+
+  .ms-Pivot-link:hover {
+    background-color: #eaeaea !important;
+  }
+}
+
+
+.statusTabActive :global {
+  .ms-Pivot-link {
+    background-color: #ffb900 !important;
+
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+  }
+
+
+  .ms-Pivot-link.is-selected {
+    background-color: #ffb900 !important;
+    border-bottom: none !important;
   }
 }

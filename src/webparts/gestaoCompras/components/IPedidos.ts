@@ -1,11 +1,12 @@
 export interface IPedido {
-    Id: number;
-    Referencia: string; // Coluna Referencia (Texto)
-    Fornecedor: string; // Coluna Fornecedor (Texto)
-    Comprador: string; // Coluna Comprador (Pessoa ou Grupo)
-    Status: string; // Coluna Status (Escolha)
-    ValorTotal: number; // Coluna ValorTotal (Número/Moeda)
-    Prioridade: string; // Coluna Prioridade (Escolha)
-    DataCriacao: Date; // Coluna Created (SharePoint padrão)
-    DataEntregaEstimada: Date; // Coluna DataEntregaEstimada (Data)
+    ID: number;
+    Title: string; // Título ou descrição resumida
+    Referencia: string; // Referência ou SKU
+    Fornecedor: string;
+    ValorTotal: number;
+    Prioridade: string; // Ex: Baixa, Média, Alta, Urgente
+    DataEntrega: Date;
+    Status: string; // Ex: Recebido, Em Procuramento, Adjudicado
+    Comprador: string; // Email do comprador
+    DataCriacao: Date;
 }

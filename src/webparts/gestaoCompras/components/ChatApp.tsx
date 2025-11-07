@@ -8,7 +8,7 @@ interface IChatMessage {
 }
 
 interface IChatAppProps {
-    // Adicione quaisquer propriedades necessárias
+
 }
 
 const ChatApp: React.FC<IChatAppProps> = () => {
@@ -22,7 +22,7 @@ const ChatApp: React.FC<IChatAppProps> = () => {
 
     useEffect(scrollToBottom, [messages]);
 
-    const handleSend = (e: React.FormEvent): void => { // CORREÇÃO: no-void e tipagem
+    const handleSend = (e: React.FormEvent): void => {
         e.preventDefault();
         if (input.trim() === '') return;
 
@@ -35,8 +35,8 @@ const ChatApp: React.FC<IChatAppProps> = () => {
         setMessages((prev) => [...prev, newMessage]);
         setInput('');
 
-        // Simula a resposta do bot após um pequeno delay
-        void setTimeout(() => { // CORREÇÃO: uso de void
+
+        void setTimeout(() => {
             const botResponse: IChatMessage = {
                 id: Date.now() + 1,
                 text: `Resposta simulada para: "${input}"`,
@@ -46,7 +46,7 @@ const ChatApp: React.FC<IChatAppProps> = () => {
         }, 1000);
     };
 
-    const handleError = (error: unknown): void => { // CORREÇÃO: no-explicit-any (uso de unknown)
+    const handleError = (error: unknown): void => {
         console.error('Erro no componente:', error);
         setMessages((prev) => [...prev, {
             id: Date.now(),
